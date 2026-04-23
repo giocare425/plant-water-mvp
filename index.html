@@ -10,11 +10,12 @@
       --card: #ffffff;
       --text: #1f2a1f;
       --muted: #617061;
-      --green: #4caf50;
-      --green-dark: #2e7d32;
+      --green: #57b65d;
+      --green-dark: #2f7d38;
       --green-soft: #dcefdc;
       --line: #d7e4d7;
       --gray-btn: #eef1ee;
+      --soft-box: #f7faf7;
     }
 
     * {
@@ -80,22 +81,18 @@
       display: none;
     }
 
-    h1, h2, h3, p {
-      margin-top: 0;
-    }
-
     .setup-title {
       font-size: 24px;
       font-weight: 800;
       text-align: center;
-      margin-bottom: 8px;
+      margin: 0 0 8px;
     }
 
     .setup-subtitle {
       font-size: 14px;
       text-align: center;
       color: var(--muted);
-      margin-bottom: 24px;
+      margin: 0 0 24px;
       line-height: 1.6;
     }
 
@@ -156,8 +153,26 @@
       margin-bottom: 18px;
     }
 
+    .plant-visual-box {
+      background: linear-gradient(180deg, #f8fcf8 0%, #f2f8f2 100%);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 10px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 150px;
+    }
+
+    #plantIllustration svg {
+      width: 140px;
+      height: 140px;
+      display: block;
+    }
+
     .info-box {
-      background: #f7faf7;
+      background: var(--soft-box);
       border: 1px solid var(--line);
       border-radius: 18px;
       padding: 14px 14px;
@@ -183,7 +198,7 @@
     }
 
     .mini-card {
-      background: #f7faf7;
+      background: var(--soft-box);
       border: 1px solid var(--line);
       border-radius: 18px;
       padding: 14px 12px;
@@ -303,9 +318,14 @@
       <div id="result">判定中...</div>
       <div id="reason"></div>
 
+      <div class="plant-visual-box">
+        <div id="plantIllustration"></div>
+      </div>
+
       <div class="info-box">
         <div class="info-line" id="plantInfo"></div>
         <div class="info-line muted" id="weather"></div>
+        <div class="info-line muted" id="humidityInfo"></div>
         <div class="info-line muted" id="lastWateredText"></div>
       </div>
 
@@ -349,8 +369,8 @@
 
     const LOCATION_MAP = {
       indoor_bright: { name: "室内明るい", factor: 1.0 },
-      indoor_dark: { name: "室内暗い", factor: 1.2 },
-      outdoor: { name: "屋外", factor: 0.8 }
+      indoor_dark: { name: "室内暗い", factor: 1.15 },
+      outdoor: { name: "屋外", factor: 0.9 }
     };
 
     function getSettings() {
@@ -384,36 +404,55 @@
     }
 
     function tempFactor(temp) {
-      if (temp >= 30) return 0.7;
-      if (temp >= 25) return 0.85;
+      if (temp >= 30) return 0.75;
+      if (temp >= 25) return 0.9;
       if (temp >= 20) return 1.0;
-      if (temp >= 15) return 1.2;
-      return 1.5;
+      if (temp >= 15) return 1.15;
+      return 1.3;
     }
 
     function humidityFactor(humidity) {
-      if (humidity >= 70) return 1.2;
-      if (humidity >= 50) return 1.0;
-      if (humidity >= 30) return 0.85;
-      return 0.7;
+      if (humidity >= 80) return 1.05;
+      if (humidity >= 60) return 1.0;
+      if (humidity >= 40) return 0.95;
+      return 0.9;
+    }
+
+    function saturationVaporPressure(tempC) {
+      return 6.112 * Math.exp((17.67 * tempC) / (tempC + 243.5));
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function getEffectiveHumidity(outdoorTemp, outdoorHumidity, locationKey) {
+      if (locationKey === "outdoor") {
+        return Math.round(outdoorHumidity);
+      }
+
+      const indoorTemp = 22;
+      const actualVaporPressure =
+        (outdoorHumidity / 100) * saturationVaporPressure(outdoorTemp);
+      const indoorRh =
+        100 * actualVaporPressure / saturationVaporPressure(indoorTemp);
+
+      return Math.round(clamp(indoorRh, 35, 65));
     }
 
     function getReason(temp, humidity, need, plantName, locationName) {
       if (need) {
-        if (temp >= 25 && humidity < 50) {
-          return `${plantName}を${locationName}で管理しており、気温が高く湿度も低めで乾きやすいためです。`;
+        if (temp >= 25 && humidity < 45) {
+          return `${plantName}を${locationName}で管理しており、気温が高く乾きやすいためです。`;
         }
-        if (temp >= 25) {
-          return `${plantName}を${locationName}で管理しており、気温が高めで乾きやすいためです。`;
-        }
-        if (humidity < 50) {
+        if (humidity < 45) {
           return `${plantName}を${locationName}で管理しており、空気が乾燥ぎみで水切れしやすいためです。`;
         }
         return `前回の水やりから日数が経っており、そろそろ水やりの目安に近いためです。`;
       }
 
-      if (humidity >= 70) {
-        return `${plantName}を${locationName}で管理しており、湿度が高めでまだ乾ききっていない可能性があります。`;
+      if (humidity >= 60) {
+        return `${plantName}を${locationName}で管理しており、まだ乾ききっていない可能性があります。`;
       }
       if (temp < 20) {
         return `${plantName}を${locationName}で管理しており、気温が低めで水の減りがゆるやかです。`;
@@ -423,7 +462,6 @@
 
     function formatLastWateredText(dateString) {
       const diffDays = getDayDifference(dateString);
-
       if (diffDays <= 0) return "最終水やり：今日";
       if (diffDays === 1) return "最終水やり：昨日";
       return `最終水やり：${diffDays}日前`;
@@ -450,6 +488,67 @@
       document.getElementById("homeScreen").classList.remove("hidden");
     }
 
+    function getPlantSvg(plantKey) {
+      const svgs = {
+        monstera: `
+          <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="62" y="110" width="36" height="28" rx="6" fill="#c7a77a"/>
+            <rect x="68" y="60" width="4" height="50" fill="#4d8c52"/>
+            <rect x="88" y="54" width="4" height="56" fill="#4d8c52"/>
+            <path d="M70 62 C42 36, 28 44, 26 70 C42 82, 58 82, 74 68 Z" fill="#5fae63"/>
+            <path d="M90 56 C118 32, 136 40, 138 68 C122 80, 106 82, 86 64 Z" fill="#69b86d"/>
+            <path d="M82 80 C50 70, 38 88, 42 114 C64 120, 80 110, 86 90 Z" fill="#58a95d"/>
+            <path d="M96 82 C124 72, 138 90, 132 118 C110 122, 96 110, 92 90 Z" fill="#62b267"/>
+          </svg>
+        `,
+        pothos: `
+          <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="60" y="112" width="40" height="24" rx="6" fill="#c7a77a"/>
+            <path d="M80 110 C80 82, 78 70, 70 54" stroke="#4d8c52" stroke-width="4" fill="none"/>
+            <path d="M80 110 C82 86, 90 72, 104 58" stroke="#4d8c52" stroke-width="4" fill="none"/>
+            <path d="M66 52 C48 44, 40 54, 44 70 C58 74, 68 66, 72 56 Z" fill="#6dbf70"/>
+            <path d="M104 56 C122 46, 132 56, 128 74 C114 78, 102 68, 98 58 Z" fill="#7acd7d"/>
+            <path d="M84 74 C66 66, 56 76, 58 92 C74 96, 86 90, 90 78 Z" fill="#68b96b"/>
+          </svg>
+        `,
+        sansevieria: `
+          <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="58" y="112" width="44" height="24" rx="6" fill="#c7a77a"/>
+            <path d="M68 112 L74 34 L82 112 Z" fill="#4b8e4e"/>
+            <path d="M82 112 L88 24 L96 112 Z" fill="#5ba85f"/>
+            <path d="M94 112 L102 40 L108 112 Z" fill="#6bb56f"/>
+            <path d="M58 112 L66 50 L72 112 Z" fill="#6aae6d"/>
+          </svg>
+        `,
+        ficus: `
+          <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="60" y="112" width="40" height="24" rx="6" fill="#c7a77a"/>
+            <rect x="78" y="54" width="4" height="58" fill="#7a5c3f"/>
+            <ellipse cx="58" cy="64" rx="18" ry="12" fill="#66b46a"/>
+            <ellipse cx="80" cy="48" rx="20" ry="13" fill="#71bf75"/>
+            <ellipse cx="102" cy="64" rx="18" ry="12" fill="#63af67"/>
+            <ellipse cx="72" cy="74" rx="18" ry="12" fill="#5ca760"/>
+            <ellipse cx="94" cy="78" rx="18" ry="12" fill="#6ab86e"/>
+          </svg>
+        `,
+        calathea: `
+          <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="60" y="112" width="40" height="24" rx="6" fill="#c7a77a"/>
+            <rect x="70" y="70" width="3" height="42" fill="#5c9f60"/>
+            <rect x="82" y="62" width="3" height="50" fill="#5c9f60"/>
+            <rect x="94" y="70" width="3" height="42" fill="#5c9f60"/>
+            <ellipse cx="68" cy="66" rx="12" ry="24" fill="#6ebc72"/>
+            <ellipse cx="84" cy="56" rx="13" ry="28" fill="#79c77d"/>
+            <ellipse cx="98" cy="66" rx="12" ry="24" fill="#67b26b"/>
+            <path d="M84 30 Q84 56 84 84" stroke="#4a7f4d" stroke-width="2" fill="none"/>
+            <path d="M68 44 Q68 66 68 84" stroke="#4a7f4d" stroke-width="2" fill="none"/>
+            <path d="M98 44 Q98 66 98 84" stroke="#4a7f4d" stroke-width="2" fill="none"/>
+          </svg>
+        `
+      };
+      return svgs[plantKey] || "";
+    }
+
     async function fetchWeatherAndJudge() {
       try {
         const settings = getSettings();
@@ -467,11 +566,24 @@
         );
         const data = await res.json();
 
-        const temp = data.current.temperature_2m;
-        const humidity = data.current.relative_humidity_2m;
+        const outdoorTemp = data.current.temperature_2m;
+        const outdoorHumidity = data.current.relative_humidity_2m;
+        const effectiveHumidity = getEffectiveHumidity(
+          outdoorTemp,
+          outdoorHumidity,
+          settings.location
+        );
+
+        document.getElementById("plantIllustration").innerHTML =
+          getPlantSvg(settings.plant);
 
         document.getElementById("weather").innerText =
-          `${region.name}｜気温 ${temp}°C / 湿度 ${humidity}%`;
+          `${region.name}｜外気 ${outdoorTemp}°C / 外気湿度 ${Math.round(outdoorHumidity)}%`;
+
+        document.getElementById("humidityInfo").innerText =
+          settings.location === "outdoor"
+            ? `判定用湿度：屋外 ${effectiveHumidity}%`
+            : `判定用湿度：室内換算 ${effectiveHumidity}%`;
 
         document.getElementById("plantInfo").innerText =
           `${plant.name}｜${location.name}`;
@@ -484,20 +596,19 @@
 
         const rawRequiredDays =
           plant.baseDays *
-          tempFactor(temp) *
-          humidityFactor(humidity) *
+          tempFactor(outdoorTemp) *
+          humidityFactor(effectiveHumidity) *
           location.factor;
 
         const requiredDays = Math.max(2, Math.min(14, rawRequiredDays));
         const requiredDaysDisplay = ceilDays(requiredDays);
-
         const needWater = daysSince >= requiredDays;
 
         document.getElementById("result").innerText =
           needWater ? "水やり必要です" : "今日は不要です";
 
         document.getElementById("reason").innerText =
-          getReason(temp, humidity, needWater, plant.name, location.name);
+          getReason(outdoorTemp, effectiveHumidity, needWater, plant.name, location.name);
 
         document.getElementById("daysSinceText").innerText = `${daysSince}日`;
         document.getElementById("requiredDaysText").innerText = `${requiredDaysDisplay}日`;
@@ -513,11 +624,13 @@
         document.getElementById("result").innerText = "判定に失敗しました";
         document.getElementById("reason").innerText = "通信状況を確認してください。";
         document.getElementById("weather").innerText = "";
+        document.getElementById("humidityInfo").innerText = "";
         document.getElementById("plantInfo").innerText = "";
         document.getElementById("lastWateredText").innerText = "";
         document.getElementById("daysSinceText").innerText = "-";
         document.getElementById("requiredDaysText").innerText = "-";
         document.getElementById("nextWateringText").innerText = "次の目安を表示できません";
+        document.getElementById("plantIllustration").innerHTML = "";
         showHomeScreen();
       }
     }
@@ -535,7 +648,6 @@
 
       saveSettings({ plant, location, region });
       localStorage.setItem("lastWatered", new Date().toISOString());
-
       document.getElementById("status").innerText = "";
       fetchWeatherAndJudge();
     }
