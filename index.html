@@ -655,19 +655,21 @@
       await fetchWeatherAndJudge();
     }
 
-    function saveInitialSettings() {
-      const plant = document.getElementById("plantSelect").value;
-      const location = document.getElementById("locationSelect").value;
-      const region = document.getElementById("regionSelect").value;
+  function saveInitialSettings() {
+    const plant = document.getElementById("plantSelect").value;
+    const location = document.getElementById("locationSelect").value;
+    const region = document.getElementById("regionSelect").value;
 
-      saveSettings({ plant, location, region });
-      document.getElementById("status").innerText = "";
-      fetchWeatherAndJudge();
-    }
+    saveSettings({ plant, location, region });
+    localStorage.removeItem("lastWatered");
+    document.getElementById("status").innerText = "";
+    fetchWeatherAndJudge();
+  }
 
     function resetSettings() {
-      document.getElementById("status").innerText = "";
-      showSetupScreen();
+    localStorage.removeItem("lastWatered");
+    document.getElementById("status").innerText = "";
+    showSetupScreen();
     }
 
     document.getElementById("saveSettingsBtn").addEventListener("click", saveInitialSettings);
