@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>水やり診断</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont;
+      text-align: center;
+      padding: 40px;
+      background: #f7f7f7;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 400px;
+      margin: auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    button {
+      margin-top: 20px;
+      padding: 12px 20px;
+      font-size: 16px;
+      background: #16a34a;
+      color: white;
+      border: none;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>今日の水やり</h2>
+    <p id="result">判定中...</p>
+    <p id="weather"></p>
+    <button onclick="watered()">水やりした</button>
+  </div>
+
+<script>
+let lastWatered = localStorage.getItem("lastWatered");
+
+if (!lastWatered) {
+  lastWatered = new Date(Date.now() - 4*24*60*60*1000);
+  localStorage.setItem("lastWatered", lastWatered);
+}
+
+async function fetchWeather() {
+  const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=35.65&longitude=139.34&current_weather=true&hourly=relativehumidity_2m");
+  const data = await res.json();
+
+  const temp = data.current_weather.temperature;
+  const humidity = data.hourly.relativehumidity_2m[0];
+
+  document.getElementById("weather").innerText =
+    `気温 ${temp}℃ / 湿度 ${humidity}%`;
+
+  const daysSince = Math.floor(
+    (Date.now() - new Date(localStorage.getItem("lastWatered")).getTime()) / (1000*60*60*24)
+  );
+
+  const base = 5;
+
+  function tempFactor(t){
+    if(t>=30) return 0.7;
+    if(t>=25) return 0.85;
+    if(t>=20) return 1;
+    if(t>=15) return 1.2;
+    return 1.5;
+  }
+
+  function humidityFactor(h){
+    if(h>=70) return 1.2;
+    if(h>=50) return 1;
+    if(h>=30) return 0.85;
+    return 0.7;
+  }
+
+  const required = Math.max(2, Math.min(14,
+    base * tempFactor(temp) * humidityFactor(humidity)
+  ));
+
+  const need = daysSince >= required;
+
+  document.getElementById("result").innerText =
+    need ? "水やり必要です" : "今日は不要です";
+}
+
+function watered(){
+  localStorage.setItem("lastWatered", new Date());
+  fetchWeather();
+}
+
+fetchWeather();
+</script>
+</body>
+</html>
