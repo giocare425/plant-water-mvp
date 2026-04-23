@@ -6,94 +6,184 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
       text-align: center;
-      padding: 40px;
+      padding: 40px 20px;
       background: #f7f7f7;
+      color: #222;
     }
+
     .card {
       background: white;
-      padding: 30px;
-      border-radius: 12px;
-      max-width: 400px;
-      margin: auto;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 30px 24px;
+      border-radius: 16px;
+      max-width: 420px;
+      margin: 40px auto;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
     }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+
+    #result {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 16px 0 10px;
+    }
+
+    #reason {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 14px;
+      line-height: 1.6;
+      min-height: 44px;
+    }
+
+    #weather {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    #status {
+      font-size: 13px;
+      color: #2f6f3e;
+      min-height: 20px;
+      margin-bottom: 8px;
+    }
+
     button {
-      margin-top: 20px;
-      padding: 12px 20px;
+      margin-top: 18px;
+      padding: 14px 22px;
       font-size: 16px;
+      font-weight: 600;
       background: #16a34a;
       color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
+      cursor: pointer;
+      width: 100%;
+      max-width: 240px;
+    }
+
+    button:hover {
+      opacity: 0.95;
     }
   </style>
 </head>
 <body>
   <div class="card">
-    <h2>今日の水やり</h2>
-    <p id="result">判定中...</p>
-    <p id="weather"></p>
+    <h1>今日の水やり</h1>
+    <div id="result">判定中...</div>
+    <div id="reason"></div>
+    <div id="weather"></div>
+    <div id="status"></div>
     <button onclick="watered()">水やりした</button>
   </div>
 
-<script>
-let lastWatered = localStorage.getItem("lastWatered");
+  <script>
+    const LATITUDE = 35.65;
+    const LONGITUDE = 139.34;
+    const BASE_DAYS = 5;
 
-if (!lastWatered) {
-  lastWatered = new Date(Date.now() - 4*24*60*60*1000);
-  localStorage.setItem("lastWatered", lastWatered);
-}
+    function getStoredLastWatered() {
+      let stored = localStorage.getItem("lastWatered");
 
-async function fetchWeather() {
-  const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=35.65&longitude=139.34&current_weather=true&hourly=relativehumidity_2m");
-  const data = await res.json();
+      if (!stored) {
+        const defaultDate = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString();
+        localStorage.setItem("lastWatered", defaultDate);
+        stored = defaultDate;
+      }
 
-  const temp = data.current_weather.temperature;
-  const humidity = data.hourly.relativehumidity_2m[0];
+      return stored;
+    }
 
-  document.getElementById("weather").innerText =
-    `気温 ${temp}℃ / 湿度 ${humidity}%`;
+    function tempFactor(t) {
+      if (t >= 30) return 0.7;
+      if (t >= 25) return 0.85;
+      if (t >= 20) return 1.0;
+      if (t >= 15) return 1.2;
+      return 1.5;
+    }
 
-  const daysSince = Math.floor(
-    (Date.now() - new Date(localStorage.getItem("lastWatered")).getTime()) / (1000*60*60*24)
-  );
+    function humidityFactor(h) {
+      if (h >= 70) return 1.2;
+      if (h >= 50) return 1.0;
+      if (h >= 30) return 0.85;
+      return 0.7;
+    }
 
-  const base = 5;
+    function getReason(temp, humidity, need) {
+      if (need) {
+        if (temp >= 25 && humidity < 50) {
+          return "気温が高く、湿度も低めで乾きやすいためです。";
+        }
+        if (temp >= 25) {
+          return "気温が高めで土が乾きやすいためです。";
+        }
+        if (humidity < 50) {
+          return "空気が乾燥ぎみで、水切れしやすいためです。";
+        }
+        return "前回の水やりから日数が経っているためです。";
+      } else {
+        if (humidity >= 70) {
+          return "湿度が高めで、まだ乾ききっていない可能性があるためです。";
+        }
+        if (temp < 20) {
+          return "気温が低めで、水の減りがゆるやかなためです。";
+        }
+        return "前回の水やりからまだ日数が浅いためです。";
+      }
+    }
 
-  function tempFactor(t){
-    if(t>=30) return 0.7;
-    if(t>=25) return 0.85;
-    if(t>=20) return 1;
-    if(t>=15) return 1.2;
-    return 1.5;
-  }
+    async function fetchWeather() {
+      try {
+        document.getElementById("status").innerText = "";
 
-  function humidityFactor(h){
-    if(h>=70) return 1.2;
-    if(h>=50) return 1;
-    if(h>=30) return 0.85;
-    return 0.7;
-  }
+        const res = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current=temperature_2m,relative_humidity_2m`
+        );
+        const data = await res.json();
 
-  const required = Math.max(2, Math.min(14,
-    base * tempFactor(temp) * humidityFactor(humidity)
-  ));
+        const temp = data.current.temperature_2m;
+        const humidity = data.current.relative_humidity_2m;
 
-  const need = daysSince >= required;
+        document.getElementById("weather").innerText =
+          `気温 ${temp}°C / 湿度 ${humidity}%`;
 
-  document.getElementById("result").innerText =
-    need ? "水やり必要です" : "今日は不要です";
-}
+        const saved = getStoredLastWatered();
+        const daysSince = Math.floor(
+          (Date.now() - new Date(saved).getTime()) / (1000 * 60 * 60 * 24)
+        );
 
-function watered(){
-  localStorage.setItem("lastWatered", new Date());
-  fetchWeather();
-}
-}
+        const required = Math.max(
+          2,
+          Math.min(14, BASE_DAYS * tempFactor(temp) * humidityFactor(humidity))
+        );
 
-fetchWeather();
-</script>
+        const need = daysSince >= required;
+
+        document.getElementById("result").innerText =
+          need ? "水やり必要です" : "今日は不要です";
+
+        document.getElementById("reason").innerText =
+          getReason(temp, humidity, need);
+      } catch (e) {
+        document.getElementById("result").innerText = "判定に失敗しました";
+        document.getElementById("reason").innerText = "通信状況を確認してください。";
+        document.getElementById("weather").innerText = "";
+      }
+    }
+
+    function watered() {
+      localStorage.setItem("lastWatered", new Date().toISOString());
+      document.getElementById("status").innerText = "記録しました";
+      fetchWeather();
+    }
+
+    fetchWeather();
+  </script>
 </body>
 </html>
