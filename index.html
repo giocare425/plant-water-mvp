@@ -153,24 +153,6 @@
       margin-bottom: 18px;
     }
 
-    .plant-visual-box {
-      background: linear-gradient(180deg, #f8fcf8 0%, #f2f8f2 100%);
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      padding: 10px;
-      margin-bottom: 14px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 150px;
-    }
-
-    #plantIllustration svg {
-      width: 140px;
-      height: 140px;
-      display: block;
-    }
-
     .info-box {
       background: var(--soft-box);
       border: 1px solid var(--line);
@@ -188,6 +170,27 @@
 
     .info-line.muted {
       color: var(--muted);
+    }
+
+    .plant-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .plant-inline-illustration {
+      width: 40px;
+      height: 40px;
+      flex: 0 0 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .plant-inline-illustration svg {
+      width: 40px;
+      height: 40px;
+      display: block;
     }
 
     .mini-grid {
@@ -318,12 +321,11 @@
       <div id="result">判定中...</div>
       <div id="reason"></div>
 
-      <div class="plant-visual-box">
-        <div id="plantIllustration"></div>
-      </div>
-
       <div class="info-box">
-        <div class="info-line" id="plantInfo"></div>
+        <div class="info-line plant-row">
+          <div id="plantIllustration" class="plant-inline-illustration"></div>
+          <div id="plantInfo"></div>
+        </div>
         <div class="info-line muted" id="weather"></div>
         <div class="info-line muted" id="humidityInfo"></div>
         <div class="info-line muted" id="lastWateredText"></div>
