@@ -313,7 +313,7 @@
       </div>
 
       <button id="saveSettingsBtn" class="primary-button" type="button">設定して始める</button>
-      <div class="footer-note">入力は最小。判断も最小です。</div>
+      <div class="footer-note">デモ版のため、現在は1つの植物のみ対応しています</div>
     </div>
 
     <div class="card hidden" id="homeScreen">
@@ -385,12 +385,7 @@
     }
 
     function getLastWatered() {
-      let stored = localStorage.getItem("lastWatered");
-      if (!stored) {
-        stored = new Date().toISOString();
-        localStorage.setItem("lastWatered", stored);
-      }
-      return stored;
+      return localStorage.getItem("lastWatered");
     }
 
     function toStartOfDay(date) {
@@ -442,7 +437,11 @@
       return Math.round(clamp(indoorRh, 35, 65));
     }
 
-    function getReason(temp, humidity, need, plantName, locationName) {
+    function getReason(temp, humidity, need, plantName, locationName, hasRecord) {
+      if (!hasRecord) {
+        return "初回は水やり後に記録してください";
+      }
+
       if (need) {
         if (temp >= 25 && humidity < 45) {
           return `${plantName}を${locationName}で管理しており、気温が高く乾きやすいためです。`;
@@ -450,7 +449,7 @@
         if (humidity < 45) {
           return `${plantName}を${locationName}で管理しており、空気が乾燥ぎみで水切れしやすいためです。`;
         }
-        return `前回の水やりから日数が経っており、そろそろ水やりの目安に近いためです。`;
+        return "前回の水やりから日数が経っており、そろそろ水やりの目安に近いためです。";
       }
 
       if (humidity >= 60) {
@@ -459,10 +458,12 @@
       if (temp < 20) {
         return `${plantName}を${locationName}で管理しており、気温が低めで水の減りがゆるやかです。`;
       }
-      return `前回の水やりからまだ日数が浅く、今日は見送ってよさそうです。`;
+      return "前回の水やりからまだ日数が浅く、今日は見送ってよさそうです。";
     }
 
     function formatLastWateredText(dateString) {
+      if (!dateString) return "最終水やり：未記録";
+
       const diffDays = getDayDifference(dateString);
       if (diffDays <= 0) return "最終水やり：今日";
       if (diffDays === 1) return "最終水やり：昨日";
@@ -594,6 +595,17 @@
         document.getElementById("lastWateredText").innerText =
           formatLastWateredText(saved);
 
+        if (!saved) {
+          document.getElementById("result").innerText = "まず水やりしてください";
+          document.getElementById("reason").innerText =
+            getReason(outdoorTemp, effectiveHumidity, false, plant.name, location.name, false);
+          document.getElementById("daysSinceText").innerText = "-";
+          document.getElementById("requiredDaysText").innerText = "-";
+          document.getElementById("nextWateringText").innerText = "次の目安：水やり後に表示されます";
+          showHomeScreen();
+          return;
+        }
+
         const daysSince = getDayDifference(saved);
 
         const rawRequiredDays =
@@ -610,7 +622,7 @@
           needWater ? "水やり必要です" : "今日は不要です";
 
         document.getElementById("reason").innerText =
-          getReason(outdoorTemp, effectiveHumidity, needWater, plant.name, location.name);
+          getReason(outdoorTemp, effectiveHumidity, needWater, plant.name, location.name, true);
 
         document.getElementById("daysSinceText").innerText = `${daysSince}日`;
         document.getElementById("requiredDaysText").innerText = `${requiredDaysDisplay}日`;
@@ -649,7 +661,6 @@
       const region = document.getElementById("regionSelect").value;
 
       saveSettings({ plant, location, region });
-      localStorage.setItem("lastWatered", new Date().toISOString());
       document.getElementById("status").innerText = "";
       fetchWeatherAndJudge();
     }
