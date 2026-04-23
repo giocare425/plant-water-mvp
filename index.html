@@ -19,42 +19,86 @@
       background: #fff;
       border-radius: 24px;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-      padding: 48px 28px;
+      padding: 40px 28px;
       text-align: center;
     }
 
     h1 {
       font-size: 28px;
-      margin: 0 0 28px;
+      margin: 0 0 24px;
       font-weight: 700;
     }
 
-    #result {
-      font-size: 44px;
-      font-weight: 800;
+    h2 {
+      font-size: 22px;
       margin: 0 0 20px;
-      line-height: 1.2;
+      font-weight: 700;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .field {
+      text-align: left;
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    select {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      background: #fff;
+      box-sizing: border-box;
+    }
+
+    #result {
+      font-size: 38px;
+      font-weight: 800;
+      margin: 0 0 18px;
+      line-height: 1.25;
     }
 
     #reason {
-      font-size: 18px;
+      font-size: 17px;
       color: #666;
       line-height: 1.7;
-      min-height: 64px;
-      margin-bottom: 28px;
+      min-height: 60px;
+      margin-bottom: 24px;
     }
 
     #weather {
-      font-size: 18px;
+      font-size: 17px;
       color: #666;
-      margin-bottom: 28px;
+      margin-bottom: 12px;
+    }
+
+    #plantInfo {
+      font-size: 15px;
+      color: #777;
+      margin-bottom: 18px;
+    }
+
+    #lastWateredText {
+      font-size: 15px;
+      color: #777;
+      margin-bottom: 18px;
     }
 
     #status {
       font-size: 16px;
       color: #16a34a;
       min-height: 24px;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       font-weight: 600;
     }
 
@@ -63,32 +107,107 @@
       color: white;
       border: none;
       border-radius: 14px;
-      padding: 20px 32px;
-      font-size: 24px;
+      padding: 16px 24px;
+      font-size: 20px;
       font-weight: 700;
       cursor: pointer;
-      min-width: 260px;
+      width: 100%;
+      margin-top: 8px;
     }
 
     button:hover {
       opacity: 0.95;
     }
+
+    .secondary-button {
+      background: #e5e7eb;
+      color: #333;
+      margin-top: 12px;
+    }
   </style>
 </head>
 <body>
-  <div class="card">
+  <div class="card" id="setupScreen">
+    <h1>水やり診断</h1>
+    <h2>最初に設定してください</h2>
+
+    <div class="field">
+      <label for="plantSelect">植物種類</label>
+      <select id="plantSelect">
+        <option value="monstera">モンステラ</option>
+        <option value="pothos">ポトス</option>
+        <option value="sansevieria">サンスベリア</option>
+        <option value="ficus">フィカス</option>
+        <option value="calathea">カラテア</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="locationSelect">置き場所</label>
+      <select id="locationSelect">
+        <option value="indoor_bright">室内明るい</option>
+        <option value="indoor_dark">室内暗い</option>
+        <option value="outdoor">屋外</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="regionSelect">地域</label>
+      <select id="regionSelect">
+        <option value="hachioji">八王子</option>
+        <option value="tokyo">東京</option>
+        <option value="osaka">大阪</option>
+        <option value="nagoya">名古屋</option>
+        <option value="fukuoka">福岡</option>
+      </select>
+    </div>
+
+    <button id="saveSettingsBtn" type="button">設定して始める</button>
+  </div>
+
+  <div class="card hidden" id="homeScreen">
     <h1>今日の水やり</h1>
     <div id="result">判定中...</div>
     <div id="reason"></div>
     <div id="weather"></div>
+    <div id="plantInfo"></div>
+    <div id="lastWateredText"></div>
     <div id="status"></div>
     <button id="waterBtn" type="button">水やりした</button>
+    <button id="resetBtn" class="secondary-button" type="button">設定を変更する</button>
   </div>
 
   <script>
-    const LATITUDE = 35.65;
-    const LONGITUDE = 139.34;
-    const BASE_DAYS = 5;
+    const REGION_MAP = {
+      hachioji: { name: "八王子", lat: 35.65, lon: 139.34 },
+      tokyo: { name: "東京", lat: 35.68, lon: 139.76 },
+      osaka: { name: "大阪", lat: 34.69, lon: 135.50 },
+      nagoya: { name: "名古屋", lat: 35.18, lon: 136.91 },
+      fukuoka: { name: "福岡", lat: 33.59, lon: 130.40 }
+    };
+
+    const PLANT_MAP = {
+      monstera: { name: "モンステラ", baseDays: 5 },
+      pothos: { name: "ポトス", baseDays: 6 },
+      sansevieria: { name: "サンスベリア", baseDays: 10 },
+      ficus: { name: "フィカス", baseDays: 7 },
+      calathea: { name: "カラテア", baseDays: 4 }
+    };
+
+    const LOCATION_MAP = {
+      indoor_bright: { name: "室内明るい", factor: 1.0 },
+      indoor_dark: { name: "室内暗い", factor: 1.2 },
+      outdoor: { name: "屋外", factor: 0.8 }
+    };
+
+    function getSettings() {
+      const raw = localStorage.getItem("plantAppSettings");
+      return raw ? JSON.parse(raw) : null;
+    }
+
+    function saveSettings(settings) {
+      localStorage.setItem("plantAppSettings", JSON.stringify(settings));
+    }
 
     function getLastWatered() {
       let stored = localStorage.getItem("lastWatered");
@@ -139,52 +258,126 @@
       return "前回の水やりからまだ日数が浅いためです。";
     }
 
-    async function fetchWeather() {
+    function formatLastWateredText(dateString) {
+      const savedDate = new Date(dateString);
+      const today = new Date();
+
+      const diffDays = Math.floor(
+        (today.getTime() - savedDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      if (diffDays <= 0) return "最終水やり：今日";
+      if (diffDays === 1) return "最終水やり：昨日";
+      return `最終水やり：${diffDays}日前`;
+    }
+
+    function showSetupScreen() {
+      document.getElementById("setupScreen").classList.remove("hidden");
+      document.getElementById("homeScreen").classList.add("hidden");
+    }
+
+    function showHomeScreen() {
+      document.getElementById("setupScreen").classList.add("hidden");
+      document.getElementById("homeScreen").classList.remove("hidden");
+    }
+
+    async function fetchWeatherAndJudge() {
       try {
-        const resultEl = document.getElementById("result");
-        const reasonEl = document.getElementById("reason");
-        const weatherEl = document.getElementById("weather");
+        const settings = getSettings();
+        if (!settings) {
+          showSetupScreen();
+          return;
+        }
+
+        const region = REGION_MAP[settings.region];
+        const plant = PLANT_MAP[settings.plant];
+        const location = LOCATION_MAP[settings.location];
 
         const res = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current=temperature_2m,relative_humidity_2m`
+          `https://api.open-meteo.com/v1/forecast?latitude=${region.lat}&longitude=${region.lon}&current=temperature_2m,relative_humidity_2m`
         );
         const data = await res.json();
 
         const temp = data.current.temperature_2m;
         const humidity = data.current.relative_humidity_2m;
 
-        weatherEl.innerText = `気温 ${temp}°C / 湿度 ${humidity}%`;
+        document.getElementById("weather").innerText =
+          `${region.name}｜気温 ${temp}°C / 湿度 ${humidity}%`;
+
+        document.getElementById("plantInfo").innerText =
+          `${plant.name}｜${location.name}`;
 
         const saved = getLastWatered();
+        document.getElementById("lastWateredText").innerText =
+          formatLastWateredText(saved);
+
         const daysSince = Math.floor(
           (Date.now() - new Date(saved).getTime()) / (1000 * 60 * 60 * 24)
         );
 
         const requiredDays = Math.max(
           2,
-          Math.min(14, BASE_DAYS * tempFactor(temp) * humidityFactor(humidity))
+          Math.min(
+            14,
+            plant.baseDays * tempFactor(temp) * humidityFactor(humidity) * location.factor
+          )
         );
 
         const needWater = daysSince >= requiredDays;
 
-        resultEl.innerText = needWater ? "水やり必要です" : "今日は不要です";
-        reasonEl.innerText = getReason(temp, humidity, needWater);
+        document.getElementById("result").innerText =
+          needWater ? "水やり必要です" : "今日は不要です";
+
+        document.getElementById("reason").innerText =
+          getReason(temp, humidity, needWater);
+
+        showHomeScreen();
       } catch (error) {
         document.getElementById("result").innerText = "判定に失敗しました";
         document.getElementById("reason").innerText = "通信状況を確認してください。";
         document.getElementById("weather").innerText = "";
+        showHomeScreen();
       }
     }
 
     async function watered() {
       localStorage.setItem("lastWatered", new Date().toISOString());
       document.getElementById("status").innerText = "記録しました";
-      await fetchWeather();
+      await fetchWeatherAndJudge();
     }
 
-    document.getElementById("waterBtn").addEventListener("click", watered);
+    function saveInitialSettings() {
+      const plant = document.getElementById("plantSelect").value;
+      const location = document.getElementById("locationSelect").value;
+      const region = document.getElementById("regionSelect").value;
 
-    fetchWeather();
+      saveSettings({ plant, location, region });
+
+      localStorage.setItem(
+        "lastWatered",
+        new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
+      );
+
+      document.getElementById("status").innerText = "";
+      fetchWeatherAndJudge();
+    }
+
+    function resetSettings() {
+      localStorage.removeItem("plantAppSettings");
+      localStorage.removeItem("lastWatered");
+      document.getElementById("status").innerText = "";
+      showSetupScreen();
+    }
+
+    document.getElementById("saveSettingsBtn").addEventListener("click", saveInitialSettings);
+    document.getElementById("waterBtn").addEventListener("click", watered);
+    document.getElementById("resetBtn").addEventListener("click", resetSettings);
+
+    if (getSettings()) {
+      fetchWeatherAndJudge();
+    } else {
+      showSetupScreen();
+    }
   </script>
 </body>
 </html>
