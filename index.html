@@ -368,6 +368,7 @@
 
       <div id="status"></div>
       <button id="waterBtn" class="primary-button" type="button">水やりした</button>
+      <button id="testDueBtn" class="secondary-button" type="button">テスト：7日前にする</button>
       <button id="resetBtn" class="secondary-button" type="button">設定を変更する</button>
     </div>
   </div>
@@ -657,8 +658,16 @@
 
     document.getElementById("saveSettingsBtn").addEventListener("click", saveInitialSettings);
     document.getElementById("waterBtn").addEventListener("click", watered);
-    document.getElementById("resetBtn").addEventListener("click", resetSettings);
+    document.getElementById("testDueBtn").addEventListener("click", () => {
+      localStorage.setItem(
+        "lastWatered",
+      new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    );
+    document.getElementById("status").innerText = "テスト用に7日前へ変更しました";
+    fetchWeatherAndJudge();
+  });
 
+document.getElementById("resetBtn").addEventListener("click", resetSettings);
     document.querySelectorAll(".feedback-button").forEach((button) => {
       button.addEventListener("click", () => saveFeedback(button.dataset.feedback));
     });
