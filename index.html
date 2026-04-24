@@ -444,15 +444,21 @@
     }
 
     function getEffectiveHumidity(outdoorTemp, outdoorHumidity, locationKey) {
-      if (locationKey === "outdoor") return Math.round(outdoorHumidity);
+      // 屋外はそのまま使う
+      if (locationKey === "outdoor") {
+       return Math.round(outdoorHumidity);
+      }
 
-      const indoorTemp = 22;
-      const actualVaporPressure =
-        (outdoorHumidity / 100) * saturationVaporPressure(outdoorTemp);
-      const indoorRh =
-        100 * actualVaporPressure / saturationVaporPressure(indoorTemp);
+      // 室内は50%を基準に外気の影響を弱く反映
+      const indoorBaseHumidity = 50;
 
-      return Math.round(clamp(indoorRh, 35, 65));
+      // 外気との差分を弱めて反映（0.08がポイント）
+      const weakOutdoorEffect = (outdoorHumidity - 60) * 0.08;
+
+      const estimatedIndoorHumidity = indoorBaseHumidity + weakOutdoorEffect;
+
+      // 室内として現実的な範囲に制限
+      return Math.round(Math.max(45, Math.min(60, estimatedIndoorHumidity)));
     }
 
     function getReason(temp, humidity, need, plantName, locationName, hasRecord) {
