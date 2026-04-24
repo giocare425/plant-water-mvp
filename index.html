@@ -16,11 +16,11 @@
       --line: #d7e4d7;
       --gray-btn: #eef1ee;
       --soft-box: #f7faf7;
+      --warning-soft: #fff7e6;
+      --warning-text: #8a5a00;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -58,7 +58,6 @@
     .hero-title {
       font-size: 26px;
       font-weight: 800;
-      letter-spacing: 0.02em;
       margin: 0 0 6px;
     }
 
@@ -74,12 +73,9 @@
       border-radius: 28px;
       box-shadow: 0 10px 28px rgba(32, 73, 39, 0.08);
       padding: 26px 20px 22px;
-      border: 1px solid rgba(255, 255, 255, 0.6);
     }
 
-    .hidden {
-      display: none;
-    }
+    .hidden { display: none; }
 
     .setup-title {
       font-size: 24px;
@@ -106,23 +102,15 @@
       font-size: 14px;
       font-weight: 700;
       margin-bottom: 8px;
-      color: var(--text);
     }
 
     select {
       width: 100%;
-      padding: 14px 14px;
+      padding: 14px;
       border-radius: 14px;
       border: 1px solid var(--line);
       font-size: 16px;
       background: #fff;
-      color: var(--text);
-      outline: none;
-    }
-
-    select:focus {
-      border-color: #8ccf90;
-      box-shadow: 0 0 0 4px rgba(140, 207, 144, 0.15);
     }
 
     .status-badge {
@@ -157,20 +145,17 @@
       background: var(--soft-box);
       border: 1px solid var(--line);
       border-radius: 18px;
-      padding: 14px 14px;
+      padding: 14px;
       margin-bottom: 14px;
     }
 
     .info-line {
       font-size: 14px;
-      color: var(--text);
       line-height: 1.7;
       margin: 2px 0;
     }
 
-    .info-line.muted {
-      color: var(--muted);
-    }
+    .info-line.muted { color: var(--muted); }
 
     .plant-row {
       display: flex;
@@ -217,7 +202,38 @@
     .mini-value {
       font-size: 20px;
       font-weight: 800;
-      color: var(--text);
+    }
+
+    .feedback-box {
+      background: var(--warning-soft);
+      border: 1px solid #f1d49a;
+      color: var(--warning-text);
+      border-radius: 18px;
+      padding: 14px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    .feedback-title {
+      font-size: 14px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .feedback-buttons {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .feedback-button {
+      background: #fff;
+      color: var(--warning-text);
+      border: 1px solid #e8c574;
+      box-shadow: none;
+      font-size: 14px;
+      padding: 11px 10px;
+      border-radius: 12px;
     }
 
     #status {
@@ -237,11 +253,6 @@
       font-size: 18px;
       font-weight: 800;
       cursor: pointer;
-      transition: transform 0.05s ease, opacity 0.2s ease;
-    }
-
-    button:active {
-      transform: translateY(1px);
     }
 
     .primary-button {
@@ -346,6 +357,15 @@
         <div class="info-line" id="nextWateringText"></div>
       </div>
 
+      <div class="feedback-box hidden" id="feedbackBox">
+        <div class="feedback-title">本日は水やり推奨日です。土の状態はどうですか？</div>
+        <div class="feedback-buttons">
+          <button class="feedback-button" type="button" data-feedback="dry">乾燥気味</button>
+          <button class="feedback-button" type="button" data-feedback="good">ちょうどいい</button>
+          <button class="feedback-button" type="button" data-feedback="wet">まだ湿ってる</button>
+        </div>
+      </div>
+
       <div id="status"></div>
       <button id="waterBtn" class="primary-button" type="button">水やりした</button>
       <button id="resetBtn" class="secondary-button" type="button">設定を変更する</button>
@@ -424,9 +444,7 @@
     }
 
     function getEffectiveHumidity(outdoorTemp, outdoorHumidity, locationKey) {
-      if (locationKey === "outdoor") {
-        return Math.round(outdoorHumidity);
-      }
+      if (locationKey === "outdoor") return Math.round(outdoorHumidity);
 
       const indoorTemp = 22;
       const actualVaporPressure =
@@ -438,9 +456,7 @@
     }
 
     function getReason(temp, humidity, need, plantName, locationName, hasRecord) {
-      if (!hasRecord) {
-        return "初回は水やり後に記録してください";
-      }
+      if (!hasRecord) return "初回は水やり後に記録してください";
 
       if (need) {
         if (temp >= 25 && humidity < 45) {
@@ -493,63 +509,36 @@
 
     function getPlantSvg(plantKey) {
       const svgs = {
-        monstera: `
-          <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <rect x="62" y="110" width="36" height="28" rx="6" fill="#c7a77a"/>
-            <rect x="68" y="60" width="4" height="50" fill="#4d8c52"/>
-            <rect x="88" y="54" width="4" height="56" fill="#4d8c52"/>
-            <path d="M70 62 C42 36, 28 44, 26 70 C42 82, 58 82, 74 68 Z" fill="#5fae63"/>
-            <path d="M90 56 C118 32, 136 40, 138 68 C122 80, 106 82, 86 64 Z" fill="#69b86d"/>
-            <path d="M82 80 C50 70, 38 88, 42 114 C64 120, 80 110, 86 90 Z" fill="#58a95d"/>
-            <path d="M96 82 C124 72, 138 90, 132 118 C110 122, 96 110, 92 90 Z" fill="#62b267"/>
-          </svg>
-        `,
-        pothos: `
-          <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <rect x="60" y="112" width="40" height="24" rx="6" fill="#c7a77a"/>
-            <path d="M80 110 C80 82, 78 70, 70 54" stroke="#4d8c52" stroke-width="4" fill="none"/>
-            <path d="M80 110 C82 86, 90 72, 104 58" stroke="#4d8c52" stroke-width="4" fill="none"/>
-            <path d="M66 52 C48 44, 40 54, 44 70 C58 74, 68 66, 72 56 Z" fill="#6dbf70"/>
-            <path d="M104 56 C122 46, 132 56, 128 74 C114 78, 102 68, 98 58 Z" fill="#7acd7d"/>
-            <path d="M84 74 C66 66, 56 76, 58 92 C74 96, 86 90, 90 78 Z" fill="#68b96b"/>
-          </svg>
-        `,
-        sansevieria: `
-          <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <rect x="58" y="112" width="44" height="24" rx="6" fill="#c7a77a"/>
-            <path d="M68 112 L74 34 L82 112 Z" fill="#4b8e4e"/>
-            <path d="M82 112 L88 24 L96 112 Z" fill="#5ba85f"/>
-            <path d="M94 112 L102 40 L108 112 Z" fill="#6bb56f"/>
-            <path d="M58 112 L66 50 L72 112 Z" fill="#6aae6d"/>
-          </svg>
-        `,
-        ficus: `
-          <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <rect x="60" y="112" width="40" height="24" rx="6" fill="#c7a77a"/>
-            <rect x="78" y="54" width="4" height="58" fill="#7a5c3f"/>
-            <ellipse cx="58" cy="64" rx="18" ry="12" fill="#66b46a"/>
-            <ellipse cx="80" cy="48" rx="20" ry="13" fill="#71bf75"/>
-            <ellipse cx="102" cy="64" rx="18" ry="12" fill="#63af67"/>
-            <ellipse cx="72" cy="74" rx="18" ry="12" fill="#5ca760"/>
-            <ellipse cx="94" cy="78" rx="18" ry="12" fill="#6ab86e"/>
-          </svg>
-        `,
-        calathea: `
-          <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <rect x="60" y="112" width="40" height="24" rx="6" fill="#c7a77a"/>
-            <rect x="70" y="70" width="3" height="42" fill="#5c9f60"/>
-            <rect x="82" y="62" width="3" height="50" fill="#5c9f60"/>
-            <rect x="94" y="70" width="3" height="42" fill="#5c9f60"/>
-            <ellipse cx="68" cy="66" rx="12" ry="24" fill="#6ebc72"/>
-            <ellipse cx="84" cy="56" rx="13" ry="28" fill="#79c77d"/>
-            <ellipse cx="98" cy="66" rx="12" ry="24" fill="#67b26b"/>
-            <path d="M84 30 Q84 56 84 84" stroke="#4a7f4d" stroke-width="2" fill="none"/>
-            <path d="M68 44 Q68 66 68 84" stroke="#4a7f4d" stroke-width="2" fill="none"/>
-            <path d="M98 44 Q98 66 98 84" stroke="#4a7f4d" stroke-width="2" fill="none"/>
-          </svg>
-        `
+        monstera: `<svg viewBox="0 0 160 160"><rect x="62" y="110" width="36" height="28" rx="6" fill="#c7a77a"/><rect x="68" y="60" width="4" height="50" fill="#4d8c52"/><rect x="88" y="54" width="4" height="56" fill="#4d8c52"/><path d="M70 62 C42 36, 28 44, 26 70 C42 82, 58 82, 74 68 Z" fill="#5fae63"/><path d="M90 56 C118 32, 136 40, 138 68 C122 80, 106 82, 86 64 Z" fill="#69b86d"/><path d="M82 80 C50 70, 38 88, 42 114 C64 120, 80 110, 86 90 Z" fill="#58a95d"/><path d="M96 82 C124 72, 138 90, 132 118 C110 122, 96 110, 92 90 Z" fill="#62b267"/></svg>`,
+        pothos: `<svg viewBox="0 0 160 160"><rect x="60" y="112" width="40" height="24" rx="6" fill="#c7a77a"/><path d="M80 110 C80 82, 78 70, 70 54" stroke="#4d8c52" stroke-width="4" fill="none"/><path d="M80 110 C82 86, 90 72, 104 58" stroke="#4d8c52" stroke-width="4" fill="none"/><path d="M66 52 C48 44, 40 54, 44 70 C58 74, 68 66, 72 56 Z" fill="#6dbf70"/><path d="M104 56 C122 46, 132 56, 128 74 C114 78, 102 68, 98 58 Z" fill="#7acd7d"/><path d="M84 74 C66 66, 56 76, 58 92 C74 96, 86 90, 90 78 Z" fill="#68b96b"/></svg>`,
+        sansevieria: `<svg viewBox="0 0 160 160"><rect x="58" y="112" width="44" height="24" rx="6" fill="#c7a77a"/><path d="M68 112 L74 34 L82 112 Z" fill="#4b8e4e"/><path d="M82 112 L88 24 L96 112 Z" fill="#5ba85f"/><path d="M94 112 L102 40 L108 112 Z" fill="#6bb56f"/><path d="M58 112 L66 50 L72 112 Z" fill="#6aae6d"/></svg>`,
+        ficus: `<svg viewBox="0 0 160 160"><rect x="60" y="112" width="40" height="24" rx="6" fill="#c7a77a"/><rect x="78" y="54" width="4" height="58" fill="#7a5c3f"/><ellipse cx="58" cy="64" rx="18" ry="12" fill="#66b46a"/><ellipse cx="80" cy="48" rx="20" ry="13" fill="#71bf75"/><ellipse cx="102" cy="64" rx="18" ry="12" fill="#63af67"/><ellipse cx="72" cy="74" rx="18" ry="12" fill="#5ca760"/><ellipse cx="94" cy="78" rx="18" ry="12" fill="#6ab86e"/></svg>`,
+        calathea: `<svg viewBox="0 0 160 160"><rect x="60" y="112" width="40" height="24" rx="6" fill="#c7a77a"/><rect x="70" y="70" width="3" height="42" fill="#5c9f60"/><rect x="82" y="62" width="3" height="50" fill="#5c9f60"/><rect x="94" y="70" width="3" height="42" fill="#5c9f60"/><ellipse cx="68" cy="66" rx="12" ry="24" fill="#6ebc72"/><ellipse cx="84" cy="56" rx="13" ry="28" fill="#79c77d"/><ellipse cx="98" cy="66" rx="12" ry="24" fill="#67b26b"/></svg>`
       };
       return svgs[plantKey] || "";
+    }
+
+    function saveFeedback(value) {
+      const settings = getSettings();
+      const logs = JSON.parse(localStorage.getItem("soilFeedbackLogs") || "[]");
+
+      logs.push({
+        date: new Date().toISOString(),
+        feedback: value,
+        settings
+      });
+
+      localStorage.setItem("soilFeedbackLogs", JSON.stringify(logs));
+
+      const labelMap = {
+        dry: "乾燥気味",
+        good: "ちょうどいい",
+        wet: "まだ湿ってる"
+      };
+
+      document.getElementById("status").innerText =
+        `土の状態を記録しました：${labelMap[value]}`;
+      document.getElementById("feedbackBox").classList.add("hidden");
     }
 
     async function fetchWeatherAndJudge() {
@@ -571,29 +560,19 @@
 
         const outdoorTemp = data.current.temperature_2m;
         const outdoorHumidity = data.current.relative_humidity_2m;
-        const effectiveHumidity = getEffectiveHumidity(
-          outdoorTemp,
-          outdoorHumidity,
-          settings.location
-        );
+        const effectiveHumidity = getEffectiveHumidity(outdoorTemp, outdoorHumidity, settings.location);
 
-        document.getElementById("plantIllustration").innerHTML =
-          getPlantSvg(settings.plant);
-
+        document.getElementById("plantIllustration").innerHTML = getPlantSvg(settings.plant);
         document.getElementById("weather").innerText =
           `${region.name}｜外気 ${outdoorTemp}°C / 外気湿度 ${Math.round(outdoorHumidity)}%`;
-
         document.getElementById("humidityInfo").innerText =
           settings.location === "outdoor"
             ? `判定用湿度：屋外 ${effectiveHumidity}%`
             : `判定用湿度：室内換算 ${effectiveHumidity}%`;
-
-        document.getElementById("plantInfo").innerText =
-          `${plant.name}｜${location.name}`;
+        document.getElementById("plantInfo").innerText = `${plant.name}｜${location.name}`;
 
         const saved = getLastWatered();
-        document.getElementById("lastWateredText").innerText =
-          formatLastWateredText(saved);
+        document.getElementById("lastWateredText").innerText = formatLastWateredText(saved);
 
         if (!saved) {
           document.getElementById("result").innerText = "まず水やりしてください";
@@ -602,6 +581,7 @@
           document.getElementById("daysSinceText").innerText = "-";
           document.getElementById("requiredDaysText").innerText = "-";
           document.getElementById("nextWateringText").innerText = "次の目安：水やり後に表示されます";
+          document.getElementById("feedbackBox").classList.add("hidden");
           showHomeScreen();
           return;
         }
@@ -614,37 +594,36 @@
           humidityFactor(effectiveHumidity) *
           location.factor;
 
-        const requiredDays = Math.max(2, Math.min(14, rawRequiredDays));
-        const requiredDaysDisplay = ceilDays(requiredDays);
-        const needWater = daysSince >= requiredDays;
+        const requiredDaysDisplay = ceilDays(Math.max(2, Math.min(14, rawRequiredDays)));
+        const needWater = daysSince >= requiredDaysDisplay;
+        const overdueDays = daysSince - requiredDaysDisplay;
 
         document.getElementById("result").innerText =
           needWater ? "水やり必要です" : "今日は不要です";
-
         document.getElementById("reason").innerText =
           getReason(outdoorTemp, effectiveHumidity, needWater, plant.name, location.name, true);
 
         document.getElementById("daysSinceText").innerText = `${daysSince}日`;
         document.getElementById("requiredDaysText").innerText = `${requiredDaysDisplay}日`;
 
-        const remainDays = requiredDaysDisplay - daysSince;
-        document.getElementById("nextWateringText").innerText =
-          remainDays <= 0
-            ? "次の目安：今日が水やりタイミングです"
-            : `次の目安：あと${remainDays}日くらい`;
+        if (needWater) {
+          document.getElementById("nextWateringText").innerText =
+            overdueDays > 0
+              ? `水やり目安から +${overdueDays}日 経過しています`
+              : "次の目安：今日が水やりタイミングです";
+          document.getElementById("feedbackBox").classList.remove("hidden");
+        } else {
+          const remainDays = requiredDaysDisplay - daysSince;
+          document.getElementById("nextWateringText").innerText =
+            `次の目安：あと${remainDays}日くらい`;
+          document.getElementById("feedbackBox").classList.add("hidden");
+        }
 
         showHomeScreen();
       } catch (error) {
         document.getElementById("result").innerText = "判定に失敗しました";
         document.getElementById("reason").innerText = "通信状況を確認してください。";
-        document.getElementById("weather").innerText = "";
-        document.getElementById("humidityInfo").innerText = "";
-        document.getElementById("plantInfo").innerText = "";
-        document.getElementById("lastWateredText").innerText = "";
-        document.getElementById("daysSinceText").innerText = "-";
-        document.getElementById("requiredDaysText").innerText = "-";
-        document.getElementById("nextWateringText").innerText = "次の目安を表示できません";
-        document.getElementById("plantIllustration").innerHTML = "";
+        document.getElementById("feedbackBox").classList.add("hidden");
         showHomeScreen();
       }
     }
@@ -655,26 +634,28 @@
       await fetchWeatherAndJudge();
     }
 
-  function saveInitialSettings() {
-    const plant = document.getElementById("plantSelect").value;
-    const location = document.getElementById("locationSelect").value;
-    const region = document.getElementById("regionSelect").value;
+    function saveInitialSettings() {
+      const plant = document.getElementById("plantSelect").value;
+      const location = document.getElementById("locationSelect").value;
+      const region = document.getElementById("regionSelect").value;
 
-    saveSettings({ plant, location, region });
-    localStorage.removeItem("lastWatered");
-    document.getElementById("status").innerText = "";
-    fetchWeatherAndJudge();
-  }
+      saveSettings({ plant, location, region });
+      document.getElementById("status").innerText = "";
+      fetchWeatherAndJudge();
+    }
 
     function resetSettings() {
-    localStorage.removeItem("lastWatered");
-    document.getElementById("status").innerText = "";
-    showSetupScreen();
+      document.getElementById("status").innerText = "";
+      showSetupScreen();
     }
 
     document.getElementById("saveSettingsBtn").addEventListener("click", saveInitialSettings);
     document.getElementById("waterBtn").addEventListener("click", watered);
     document.getElementById("resetBtn").addEventListener("click", resetSettings);
+
+    document.querySelectorAll(".feedback-button").forEach((button) => {
+      button.addEventListener("click", () => saveFeedback(button.dataset.feedback));
+    });
 
     if (getSettings()) {
       fetchWeatherAndJudge();
